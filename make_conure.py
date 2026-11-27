@@ -10,8 +10,8 @@ import sys
 
 from PIL import Image, ImageDraw
 
-W, H, SCALE = 48, 52, 4
-COLS = 8
+W, H, SCALE = 48, 52, 2
+COLS = 96  # the calm "running" loop has 96 frames, like the built-in Claudino pet
 
 K = (38, 44, 36, 255)
 G = (108, 186, 72, 255)
@@ -280,10 +280,13 @@ def bird(p):
     out = sh
 
     # extras (notes, sparkles, ...)
-    for kind, x0, y0 in p.get("extras", []):
+    for kind, x0, y0, *alpha in p.get("extras", []):
         X = layer()
         stamp(X, EXTRAS[kind], x0, y0, {"X": EXTRA_COLORS[EXTRA_KIND_COLOR[kind]]})
-        out.alpha_composite(edge_to(outline(X, K), K) if False else outline(X, K))
+        X = outline(X, K)
+        if alpha:
+            X.putalpha(X.getchannel("A").point(lambda a: int(a * alpha[0])))
+        out.alpha_composite(X)
 
     if p.get("flip"):
         out = out.transpose(Image.FLIP_LEFT_RIGHT)
@@ -300,6 +303,35 @@ HOP = [
     {"y": -4, "wing": -45, "tail": -2, "hx": 1, "eye": "happy", "feet": (1, 1)},
     {"y": -2, "wing": -20, "tail": -1},
 ]
+
+# Claudino (Orca's built-in pet) is 96 frames at 82-84 ms each: an 8 s loop at about 12 fps.
+CLAUDINO_DURATIONS = [83, 83, 84] * 32
+
+
+def calm_singing():
+    """96-frame working loop: two short sung phrases with a soft 1px nod and one
+    slowly rising note, separated by stillness. No hopping or wing moves."""
+    phrases = [(8, 40, 0), (56, 88, 6)]  # (start, end, head tilt)
+    frames = []
+    for t in range(96):
+        f = {}
+        for start, end, tilt in phrases:
+            if start <= t < end:
+                k = t - start
+                f["eye"] = "happy"
+                f["beak"] = 1 if k % 8 < 4 else 0
+                f["hy"] = 1 if (k // 6) % 2 else 0
+                if tilt:
+                    f["tilt"] = tilt
+                fade = min(1.0, k / 4, (end - start - k) / 8)
+                f["extras"] = [("note", 38 + k // 16, 12 - k // 3, fade)]
+        if 24 <= t < 72:
+            f["tail"] = 1
+        if t in (46, 47, 92):
+            f["eye"] = "blink"
+        frames.append(f)
+    return frames
+
 
 ANIMS = [
     ("idle", [
@@ -339,14 +371,7 @@ ANIMS = [
         {"tilt": -8, "extras": [("q", 38, 2)]},
         {"feet": (2, 0), "extras": [("q", 38, 2)]},
     ], [500, 500, 140, 260, 400, 260]),
-    ("running", [
-        {"hy": -2, "feet": (2, 0), "beak": 1, "eye": "happy", "tail": 1, "extras": [("note", 38, 4)]},
-        {"hy": 3, "sq": 1, "extras": [("note", 39, 2)]},
-        {"hy": -2, "feet": (0, 2), "tilt": -8, "beak": 1, "eye": "happy", "tail": -1, "extras": [("note", 5, 7)]},
-        {"hy": 3, "sq": 1, "extras": [("note", 4, 5)]},
-        {"hy": -2, "x": 1, "wing": -35, "feet": (2, 0), "beak": 1, "eye": "happy", "extras": [("note", 39, 5)]},
-        {"hy": 3, "sq": 1, "x": 1, "wing": -15, "extras": [("note", 40, 3)]},
-    ], [140, 140, 140, 140, 140, 140]),
+    ("running", calm_singing(), CLAUDINO_DURATIONS),
     ("review", [
         {"hx": 1, "tilt": -10},
         {"hx": 2, "hy": 1, "tilt": -14, "eye": "squint"},

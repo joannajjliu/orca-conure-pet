@@ -1,6 +1,6 @@
 # Green-cheeked conure pet for Orca
 
-A pixel-art green-cheeked conure for Orca's pet overlay, using the Codex pet sprite layout (192×208 frames, 9 animation rows).
+A pixel-art green-cheeked conure for Orca's pet overlay, using the Codex pet sprite layout (96×104 frames, 9 animation rows; Orca scales them up pixel-perfect).
 
 ![dance](preview/running.gif) ![idle](preview/idle.gif) ![waving](preview/waving.gif) ![jumping](preview/jumping.gif)
 
@@ -15,7 +15,7 @@ A pixel-art green-cheeked conure for Orca's pet overlay, using the Codex pet spr
 | State | What it does |
 |---|---|
 | `idle` | Breathes, blinks, tilts its head |
-| `running` (agent working) | Head-bobbing dance with music notes |
+| `running` (agent working) | Calm 8 s loop, 96 frames at ~12 fps like the built-in Claudino: two short sung phrases with a soft nod and a fading note |
 | `running-left` / `running-right` (dragging) | Hops with fluttering wings |
 | `waving` | Waves a wing, with hearts |
 | `jumping` | Jumps with both wings spread, sparkles |
@@ -27,7 +27,7 @@ Every frame: [`preview/contact.png`](preview/contact.png).
 
 ## Regenerate
 
-The sprite is drawn in code at 48×52 pixels and scaled 4×.
+The sprite is drawn in code at 48×52 pixels and scaled 2×.
 
 ```sh
 pip install pillow
