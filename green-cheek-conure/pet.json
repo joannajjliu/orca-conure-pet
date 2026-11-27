@@ -1,0 +1,125 @@
+{
+  "id": "green-cheek-conure",
+  "displayName": "Conure",
+  "description": "A green-cheeked conure that head-bobs while your agents work.",
+  "spritesheetPath": "spritesheet.webp",
+  "frame": {
+    "width": 192,
+    "height": 208
+  },
+  "fps": 8,
+  "defaultAnimation": "idle",
+  "animations": {
+    "idle": {
+      "row": 0,
+      "frames": 6,
+      "frameDurationsMs": [
+        1400,
+        700,
+        130,
+        900,
+        700,
+        1100
+      ]
+    },
+    "running-right": {
+      "row": 1,
+      "frames": 8,
+      "frameDurationsMs": [
+        90,
+        90,
+        120,
+        90,
+        90,
+        90,
+        120,
+        90
+      ]
+    },
+    "running-left": {
+      "row": 2,
+      "frames": 8,
+      "frameDurationsMs": [
+        90,
+        90,
+        120,
+        90,
+        90,
+        90,
+        120,
+        90
+      ]
+    },
+    "waving": {
+      "row": 3,
+      "frames": 4,
+      "frameDurationsMs": [
+        200,
+        200,
+        200,
+        260
+      ]
+    },
+    "jumping": {
+      "row": 4,
+      "frames": 5,
+      "frameDurationsMs": [
+        170,
+        120,
+        260,
+        140,
+        220
+      ]
+    },
+    "failed": {
+      "row": 5,
+      "frames": 8,
+      "frameDurationsMs": [
+        320,
+        90,
+        90,
+        90,
+        420,
+        420,
+        220,
+        600
+      ]
+    },
+    "waiting": {
+      "row": 6,
+      "frames": 6,
+      "frameDurationsMs": [
+        500,
+        500,
+        140,
+        260,
+        400,
+        260
+      ]
+    },
+    "running": {
+      "row": 7,
+      "frames": 6,
+      "frameDurationsMs": [
+        140,
+        140,
+        140,
+        140,
+        140,
+        140
+      ]
+    },
+    "review": {
+      "row": 8,
+      "frames": 6,
+      "frameDurationsMs": [
+        450,
+        450,
+        500,
+        220,
+        320,
+        520
+      ]
+    }
+  }
+}
