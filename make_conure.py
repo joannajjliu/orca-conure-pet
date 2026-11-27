@@ -11,7 +11,7 @@ import sys
 from PIL import Image, ImageDraw
 
 W, H, SCALE = 48, 52, 2
-COLS = 96  # the calm "running" loop has 96 frames, like the built-in Claudino pet
+COLS = 96  # each calm loop has 96 frames, like the built-in Claudino pet
 
 K = (38, 44, 36, 255)
 G = (108, 186, 72, 255)
@@ -293,93 +293,141 @@ def bird(p):
     return out
 
 
-HOP = [
-    {"sq": 1},
-    {"y": -2, "wing": -25, "tail": -1, "hx": 1},
-    {"y": -4, "wing": -45, "tail": -2, "hx": 1, "feet": (1, 1)},
-    {"y": -2, "wing": -20, "tail": -1},
-    {"sq": 1},
-    {"y": -2, "wing": -25, "tail": -1, "hx": 1},
-    {"y": -4, "wing": -45, "tail": -2, "hx": 1, "eye": "happy", "feet": (1, 1)},
-    {"y": -2, "wing": -20, "tail": -1},
-]
-
-# Claudino (Orca's built-in pet) is 96 frames at 82-84 ms each: an 8 s loop at about 12 fps.
+# Every state is a calm loop at the timing of Claudino (Orca's built-in pet):
+# 96 frames at 82-84 ms each, an 8 s loop at about 12 fps. Movement is at most a
+# pixel or two, emotions show mostly through the eyes, and each state has one
+# small symbol that fades in and out.
+LOOP = 96
 CLAUDINO_DURATIONS = [83, 83, 84] * 32
 
 
-def calm_singing():
-    """96-frame working loop: two short sung phrases with a soft 1px nod and one
-    slowly rising note, separated by stillness. No hopping or wing moves."""
-    phrases = [(8, 40, 0), (56, 88, 6)]  # (start, end, head tilt)
-    frames = []
-    for t in range(96):
-        f = {}
-        for start, end, tilt in phrases:
-            if start <= t < end:
-                k = t - start
-                f["eye"] = "happy"
-                f["beak"] = 1 if k % 8 < 4 else 0
-                f["hy"] = 1 if (k // 6) % 2 else 0
-                if tilt:
-                    f["tilt"] = tilt
-                fade = min(1.0, k / 4, (end - start - k) / 8)
-                f["extras"] = [("note", 38 + k // 16, 12 - k // 3, fade)]
-        if 24 <= t < 72:
-            f["tail"] = 1
-        if t in (46, 47, 92):
-            f["eye"] = "blink"
-        frames.append(f)
-    return frames
+def fade(k, length, fade_in=6, fade_out=10):
+    return max(0.0, min(1.0, k / fade_in, (length - k) / fade_out))
 
+
+def loop(fn, n=LOOP):
+    return [fn(t) for t in range(n)]
+
+
+def calm_idle(t):
+    f = {}
+    if 36 <= t < 64:
+        f["tilt"] = 6
+    if t in (20, 21, 78, 79):
+        f["eye"] = "blink"
+    if (t // 24) % 2:
+        f["tail"] = 1
+    return f
+
+
+def calm_walk(t, flip=False):
+    # 1 s step cycle while dragged: alternate feet, 1px bob, no wings.
+    f = {"feet": (1, 0) if t < 6 else (0, 1), "flip": flip}
+    if t % 6 in (2, 3):
+        f["y"] = -1
+    return f
+
+
+def calm_wave(t):
+    f = {"eye": "happy"}
+    if 8 <= t < 72:
+        k = t - 8
+        f["wing"] = -100 if (k // 12) % 2 else -115
+        f["extras"] = [("heart", 37, 8 - k // 10, fade(k, 64))]
+    elif t in (84, 85):
+        f["eye"] = "blink"
+    return f
+
+
+def calm_jump(t):
+    # A small pleased hop, then a sparkle.
+    f = {}
+    if 30 <= t < 34:
+        f["sq"] = 1
+    elif 34 <= t < 40:
+        f["y"] = -2 if 36 <= t < 38 else -1
+        f["wing"] = -20
+        f["far"] = 20
+        f["eye"] = "happy"
+    elif 40 <= t < 44:
+        f["sq"] = 1
+        f["eye"] = "happy"
+    if 36 <= t < 76:
+        f["eye"] = "happy"
+        f["extras"] = [("spark", 39, 6 - (t - 36) // 14, fade(t - 36, 40))]
+    return f
+
+
+def calm_failed(t):
+    # Quietly disappointed: droopy eyes, head lowered, one slow sweat drop.
+    f = {"eye": "sad", "hy": 1}
+    if 20 <= t < 32:
+        f["sq"] = 1  # a sigh
+    if t in (60, 61):
+        f["eye"] = "blink"
+    if 36 <= t < 84:
+        k = t - 36
+        f["extras"] = [("drop", 37, 9 + k // 12, fade(k, 48))]
+    return f
+
+
+def calm_waiting(t):
+    # Curious: a slow head tilt and a gentle question mark.
+    f = {}
+    if 16 <= t < 64:
+        f["tilt"] = 8
+    if t in (40, 41, 86, 87):
+        f["eye"] = "blink"
+    if 12 <= t < 76:
+        f["extras"] = [("q", 38, 3, fade(t - 12, 64, 8, 12))]
+    return f
+
+
+def calm_review(t):
+    # Leans in to look, then a content smile and one sparkle.
+    f = {}
+    if 12 <= t < 52:
+        f["hx"] = 1
+        f["tilt"] = -6
+        f["eye"] = "squint" if 20 <= t < 44 else "open"
+    elif 56 <= t < 92:
+        f["eye"] = "happy"
+        f["extras"] = [("spark", 38, 4, fade(t - 56, 36))]
+    return f
+
+
+def calm_singing(t):
+    """Working loop: two short sung phrases with a soft 1px nod and one slowly
+    rising note, separated by stillness."""
+    f = {}
+    for start, end, tilt in ((8, 40, 0), (56, 88, 6)):
+        if start <= t < end:
+            k = t - start
+            f["eye"] = "happy"
+            f["beak"] = 1 if k % 8 < 4 else 0
+            f["hy"] = 1 if (k // 6) % 2 else 0
+            if tilt:
+                f["tilt"] = tilt
+            f["extras"] = [("note", 38 + k // 16, 12 - k // 3, min(1.0, k / 4, (end - start - k) / 8))]
+    if 24 <= t < 72:
+        f["tail"] = 1
+    if t in (46, 47, 92):
+        f["eye"] = "blink"
+    return f
+
+
+WALK_DURATIONS = [83, 83, 84] * 4
 
 ANIMS = [
-    ("idle", [
-        {}, {"sq": 1}, {"eye": "blink"}, {"tilt": 8}, {"tilt": 8, "tail": 1, "sq": 1}, {},
-    ], [1400, 700, 130, 900, 700, 1100]),
-    ("running-right", HOP, [90, 90, 120, 90, 90, 90, 120, 90]),
-    ("running-left", [dict(f, flip=True) for f in HOP], [90, 90, 120, 90, 90, 90, 120, 90]),
-    ("waving", [
-        {"wing": -120, "eye": "happy"},
-        {"wing": -155, "eye": "happy", "beak": 1, "extras": [("heart", 37, 5)]},
-        {"wing": -120, "eye": "happy", "extras": [("heart", 37, 3)]},
-        {"wing": -155, "eye": "happy", "beak": 1, "extras": [("heart", 38, 1)]},
-    ], [200, 200, 200, 260]),
-    ("jumping", [
-        {"sq": 2, "eye": "blink"},
-        {"y": -5, "wing": -70, "far": 70, "tail": 2, "feet": (1, 1)},
-        {"y": -7, "wing": -115, "far": 115, "eye": "happy", "beak": 1, "feet": (1, 1),
-         "extras": [("spark", 4, 6), ("spark", 39, 4)]},
-        {"y": -4, "wing": -80, "far": 80, "tail": 1},
-        {"sq": 1},
-    ], [170, 120, 260, 140, 220]),
-    ("failed", [
-        {"eye": "wide", "y": -1, "wing": -30, "extras": [("excl", 38, 2)]},
-        {"eye": "x", "x": -1},
-        {"eye": "x", "x": 1},
-        {"eye": "x", "x": -1},
-        {"eye": "sad", "hy": 2, "sq": 1, "wing": -8, "extras": [("drop", 37, 9)]},
-        {"eye": "sad", "hy": 2, "sq": 1, "wing": -8, "extras": [("drop", 37, 10)]},
-        {"eye": "blink", "hy": 2, "sq": 1, "wing": -8, "extras": [("drop", 37, 11)]},
-        {"eye": "sad", "hy": 2, "sq": 1, "wing": -8, "tail": -1},
-    ], [320, 90, 90, 90, 420, 420, 220, 600]),
-    ("waiting", [
-        {"extras": [("q", 38, 2)]},
-        {"tilt": 12, "extras": [("q", 38, 1)]},
-        {"tilt": 12, "eye": "blink", "extras": [("q", 38, 1)]},
-        {"tilt": -8, "feet": (2, 0), "extras": [("q", 38, 2)]},
-        {"tilt": -8, "extras": [("q", 38, 2)]},
-        {"feet": (2, 0), "extras": [("q", 38, 2)]},
-    ], [500, 500, 140, 260, 400, 260]),
-    ("running", calm_singing(), CLAUDINO_DURATIONS),
-    ("review", [
-        {"hx": 1, "tilt": -10},
-        {"hx": 2, "hy": 1, "tilt": -14, "eye": "squint"},
-        {"hx": 2, "hy": 1, "tilt": -14, "eye": "squint", "feet": (0, 3)},
-        {"hx": 1, "tilt": -6},
-        {"eye": "happy", "beak": 1, "extras": [("spark", 38, 4)]},
-        {"eye": "happy", "extras": [("spark", 39, 2), ("spark", 5, 8)]},
-    ], [450, 450, 500, 220, 320, 520]),
+    ("idle", loop(calm_idle), CLAUDINO_DURATIONS),
+    ("running-right", loop(calm_walk, 12), WALK_DURATIONS),
+    ("running-left", loop(lambda t: calm_walk(t, flip=True), 12), WALK_DURATIONS),
+    ("waving", loop(calm_wave), CLAUDINO_DURATIONS),
+    ("jumping", loop(calm_jump), CLAUDINO_DURATIONS),
+    ("failed", loop(calm_failed), CLAUDINO_DURATIONS),
+    ("waiting", loop(calm_waiting), CLAUDINO_DURATIONS),
+    ("running", loop(calm_singing), CLAUDINO_DURATIONS),
+    ("review", loop(calm_review), CLAUDINO_DURATIONS),
 ]
 
 

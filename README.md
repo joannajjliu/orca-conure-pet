@@ -12,16 +12,18 @@ A pixel-art green-cheeked conure for Orca's pet overlay, using the Codex pet spr
 
 ## Animations
 
+Every state is a calm 8 s loop at the timing of Orca's built-in Claudino pet (96 frames at about 12 fps). Movement stays within a pixel or two, and each state has one soft symbol that fades in and out.
+
 | State | What it does |
 |---|---|
-| `idle` | Breathes, blinks, tilts its head |
-| `running` (agent working) | Calm 8 s loop, 96 frames at ~12 fps like the built-in Claudino: two short sung phrases with a soft nod and a fading note |
-| `running-left` / `running-right` (dragging) | Hops with fluttering wings |
-| `waving` | Waves a wing, with hearts |
-| `jumping` | Jumps with both wings spread, sparkles |
-| `waiting` (needs input) | Tilts its head and taps a foot, with a "?" |
-| `failed` | "!", dizzy eyes, then droops with a sweat drop |
-| `review` | Leans in and squints, then sparkles |
+| `idle` | Sits still, blinks, a slow head tilt |
+| `running` (agent working) | Two short sung phrases with a soft nod and a rising note |
+| `running-left` / `running-right` (dragging) | A soft 1 s walk, stepping foot to foot |
+| `waving` | A slow wing wave with a heart |
+| `jumping` | One small pleased hop, then a sparkle |
+| `failed` | Droopy eyes, a sigh, one slow sweat drop |
+| `waiting` (needs input) | A slow curious head tilt with a "?" |
+| `review` | Leans in and squints, then a content smile and a sparkle |
 
 Every frame: [`preview/contact.png`](preview/contact.png).
 
